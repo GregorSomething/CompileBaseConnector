@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+}
+
+group = 'me.gregors'
+version = '1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // MariaDB Java client
+    implementation 'org.mariadb.jdbc:mariadb-java-client:2.7.3'
+
+    // Code generation
+    implementation 'com.squareup:javapoet:1.13.0'
+    compileOnly 'org.projectlombok:lombok:1.18.34'
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
+    compileOnly 'com.google.auto.service:auto-service:1.1.1'
+    annotationProcessor 'com.google.auto.service:auto-service:1.1.1'
+    compileOnly 'org.jetbrains:annotations:24.1.0'
+
+    // Testing
+    testImplementation platform('org.junit:junit-bom:5.11.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    testCompileOnly 'org.projectlombok:lombok:1.18.34'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
+    testCompileOnly 'com.google.auto.service:auto-service:1.1.1'
+    testAnnotationProcessor 'com.google.auto.service:auto-service:1.1.1'
+    testCompileOnly 'org.jetbrains:annotations:24.1.0'
+    testAnnotationProcessor project
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    dependsOn 'compileTestJava'
+
+    maxHeapSize = '1G'
+
+    testLogging {
+        events "passed"
+    }
+}
