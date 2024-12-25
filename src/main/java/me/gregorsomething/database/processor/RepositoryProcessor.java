@@ -55,13 +55,14 @@ public class RepositoryProcessor extends AbstractProcessor {
         TypeSpec.Builder builder = TypeSpec.classBuilder(element.getSimpleName().toString() + "Imp")
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(element.asType());
-        new TypeDefResolver(this).setup(repoAnnotation);
+        TypeDefResolver extraTypes = new TypeDefResolver(this);
+        extraTypes.setup(repoAnnotation);
 
         this.createConstructor(builder, repoAnnotation);
 
         try {
 
-            final List<MethodSpec> accessMethods = this.createMethods(element);
+            final List<MethodSpec> accessMethods = this.createMethods(element, extraTypes);
             builder.addMethods(accessMethods);
 
             this.addTransactionSupportIfNeeded(element, builder);
@@ -76,7 +77,7 @@ public class RepositoryProcessor extends AbstractProcessor {
         return true;
     }
 
-    private List<MethodSpec> createMethods(Element element) {
+    private List<MethodSpec> createMethods(Element element, TypeDefResolver extraTypes) {
         SqlHelper helper = new SqlHelper(this);
         StatementSubProcessor subProcessorStatement = new StatementSubProcessor(this);
         QuerySubProcessor subProcessorQuery = new QuerySubProcessor(this, helper);

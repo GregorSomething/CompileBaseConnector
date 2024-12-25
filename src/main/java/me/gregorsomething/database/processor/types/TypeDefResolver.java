@@ -3,6 +3,7 @@ package me.gregorsomething.database.processor.types;
 import lombok.RequiredArgsConstructor;
 import me.gregorsomething.database.annotations.Repository;
 import me.gregorsomething.database.processor.RepositoryProcessor;
+import me.gregorsomething.database.processor.helpers.Pair;
 
 import javax.lang.model.element.*;
 import javax.lang.model.type.MirroredTypesException;
@@ -11,17 +12,42 @@ import javax.lang.model.type.TypeMirror;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 public class TypeDefResolver {
 
     private final RepositoryProcessor processor;
+    private final Map<TypeMirror, Pair<TypeMirror, String>> typesMapped = new HashMap<>();
 
+    /**
+     * Finds repository typedef mappings based on its annotation
+     * @param repo annotation for what repo to find mappings
+     */
     public void setup(Repository repo) {
         for (TypeMirror type : this.readClasses(repo)) {
             this.searchFromExtension(type);
         }
+    }
+
+    /**
+     * Checks if this has found typedef with return value of key
+     * @param type type for what to look mapper
+     * @return true if found else false
+     */
+    public boolean hasTypeDefFromResultSet(TypeMirror type) {
+        return this.typesMapped.containsKey(type);
+    }
+
+    /**
+     * Returns mapped type class type and method name, signature is name(ResultSet, int), return type is key
+     * @param type return type for mapper
+     * @return mapper class and method name if present
+     */
+    public Pair<TypeMirror, String> getTypeMapperFromResultSet(TypeMirror type) {
+        return this.typesMapped.get(type);
     }
 
     private void searchFromExtension(TypeMirror classType) {
@@ -40,6 +66,7 @@ public class TypeDefResolver {
     private void processMethod(ExecutableElement element, Element parent) {
         if (!this.isCorrectSignatureForTypeDef(element, parent))
             return;
+        this.typesMapped.put(element.getReturnType(), new Pair<>(parent.asType(), element.getSimpleName().toString()));
     }
 
     private boolean isCorrectSignatureForTypeDef(ExecutableElement element, Element parent) {
