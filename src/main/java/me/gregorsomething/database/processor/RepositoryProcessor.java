@@ -11,6 +11,8 @@ import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.annotations.Repository;
 import me.gregorsomething.database.annotations.Statement;
 import me.gregorsomething.database.processor.helpers.SqlHelper;
+import me.gregorsomething.database.processor.types.TypeDefResolver;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -53,6 +55,8 @@ public class RepositoryProcessor extends AbstractProcessor {
         TypeSpec.Builder builder = TypeSpec.classBuilder(element.getSimpleName().toString() + "Imp")
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(element.asType());
+        new TypeDefResolver(this).setup(repoAnnotation);
+
         this.createConstructor(builder, repoAnnotation);
 
         try {
@@ -146,9 +150,17 @@ public class RepositoryProcessor extends AbstractProcessor {
                 .toList();
     }
 
-    public boolean error(String message, Element element) {
+    public boolean error(String message, @Nullable Element element) {
         this.processingEnv.getMessager().printError(message, element);
         return false;
+    }
+
+    public void warning(String message, @Nullable Element element) {
+        this.processingEnv.getMessager().printWarning(message, element);
+    }
+
+    public void message(String message, @Nullable Element element) {
+        this.processingEnv.getMessager().printNote(message);
     }
 
     public boolean isOfType(TypeMirror type1, Class<?> type2) {

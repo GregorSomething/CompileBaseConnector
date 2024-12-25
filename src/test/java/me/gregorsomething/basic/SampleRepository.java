@@ -5,7 +5,10 @@ import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.annotations.Repository;
 import me.gregorsomething.database.annotations.Statement;
 
-@Repository("CREATE TABLE IF NOT EXISTS gs_test_database1 (aaa INT PRIMARY KEY, bbb TEXT);")
+@Repository(
+        value = "CREATE TABLE IF NOT EXISTS gs_test_database1 (aaa INT PRIMARY KEY, bbb TEXT);",
+        additionalTypes = {TypeExtension.class}
+)
 public interface SampleRepository extends Transactional<SampleRepository> {
 
     @Statement("DELETE FROM gs_test_database1;")

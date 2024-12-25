@@ -6,6 +6,7 @@ import com.squareup.javapoet.TypeName;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 import java.util.List;
 
 public final class ElementUtils {
