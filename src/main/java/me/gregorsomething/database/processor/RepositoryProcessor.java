@@ -11,7 +11,7 @@ import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.annotations.Repository;
 import me.gregorsomething.database.annotations.Statement;
 import me.gregorsomething.database.processor.helpers.SqlHelper;
-import me.gregorsomething.database.processor.types.TypeDefResolver;
+import me.gregorsomething.database.processor.types.TypeMapperResolver;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.processing.*;
@@ -55,7 +55,7 @@ public class RepositoryProcessor extends AbstractProcessor {
         TypeSpec.Builder builder = TypeSpec.classBuilder(element.getSimpleName().toString() + "Imp")
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(element.asType());
-        TypeDefResolver extraTypes = new TypeDefResolver(this);
+        TypeMapperResolver extraTypes = new TypeMapperResolver(this);
         extraTypes.setup(repoAnnotation);
 
         this.createConstructor(builder, repoAnnotation);
@@ -77,7 +77,7 @@ public class RepositoryProcessor extends AbstractProcessor {
         return true;
     }
 
-    private List<MethodSpec> createMethods(Element element, TypeDefResolver extraTypes) {
+    private List<MethodSpec> createMethods(Element element, TypeMapperResolver extraTypes) {
         SqlHelper helper = new SqlHelper(this);
         StatementSubProcessor subProcessorStatement = new StatementSubProcessor(this);
         QuerySubProcessor subProcessorQuery = new QuerySubProcessor(this, helper);

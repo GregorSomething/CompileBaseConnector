@@ -56,88 +56,17 @@ public class QuerySubProcessor {
     private CodeBlock generateCodeFor(ExecutableElement element, Query query) {
         TypeMirror type = element.getReturnType();
         if (element.getReturnType().getKind().isPrimitive()) {
-            return this.generateCodeNoOptionalForMapper(element, query, this.helper.simpleMapperFor(type, 1));
+            return CodeBlock.builder().build(); // TODO primitive (int, long)
         }
         if (this.processor.isOfType(type, ResultSet.class)) {
-            return generateForResultSet(element, query);
+            return CodeBlock.builder().build(); // TODO pure resultset return (ResultSet)
         }
         if (this.processor.isBaseTypeOf(type, Optional.class)) {
-            return this.generateForOptionalSimple(element, query);
+            return CodeBlock.builder().build(); // TODO Optional (Optional<Long>, Optional<String>)
         }
         if (this.processor.isBaseTypeOf(type, List.class)) {
-            return this.generatorForListSimple(element, query);
+            return CodeBlock.builder().build(); // TODO list (List<Long>, List<String>)
         }
-        return this.generateCodeNoOptionalForMapper(element, query, this.helper.simpleMapperFor(type, 1));
-    }
-
-    private CodeBlock generateForResultSet(ExecutableElement element, Query query) {
-        CodeBlock.Builder builder = CodeBlock.builder();
-        StringBuilder args = new StringBuilder();
-        for (VariableElement parameter : element.getParameters()) {
-            args.append(", ").append(parameter.getSimpleName().toString());
-        }
-        builder.addStatement("return this.database.query($S$L)", query.value(), args.toString());
-        return builder.build();
-    }
-
-    private CodeBlock generateForOptionalSimple(ExecutableElement element, Query query) {
-        return generateCodeWithMappingUsingMethodParmType(element, query, "queryAndMap");
-    }
-
-    private CodeBlock generatorForListSimple(ExecutableElement element, Query query) {
-        return generateCodeWithMappingUsingMethodParmType(element, query, "queryAndMapAll");
-    }
-
-    private CodeBlock generateCodeWithMappingUsingMethodParmType(ExecutableElement element, Query query, String method) {
-        TypeMirror type = this.getTypeParameterOf(element.getReturnType(), element);
-        StringBuilder args = new StringBuilder();
-        for (VariableElement parameter : element.getParameters()) {
-            args.append(", ").append(parameter.getSimpleName().toString());
-        }
-        String mapper = query.mapping().isEmpty() ? this.getAutoMappingFor(type, 1) : query.mapping();
-        if (mapper == null)
-            throw new ProcessingValidationException("Did not find auto mapping to paramater return type: " + TypeName.get(type).toString(), element);
-        return CodeBlock.builder()
-                .addStatement("return this.database.$L($S, $L$L)", method, query.value(), mapper, args)
-                .build();
-    }
-
-    private CodeBlock generateCodeNoOptionalForMapper(ExecutableElement element, Query query, String mapper) {
-        if (element.getReturnType().getKind().isPrimitive() && query.defaultValue().isEmpty())
-            throw new ProcessingValidationException("Primitive types must use default value type.", element);
-        if ((mapper == null || mapper.isEmpty()) && query.mapping().isEmpty())
-            throw new ProcessingValidationException("Did not find auto mapping.", element);
-        mapper = query.mapping().isEmpty() ? mapper : query.mapping();
-
-        StringBuilder args = new StringBuilder();
-        for (VariableElement parameter : element.getParameters()) {
-            args.append(", ").append(parameter.getSimpleName().toString());
-        }
-        return CodeBlock.builder()
-                .beginControlFlow("try ($T rs = this.database.query($S$L))", ResultSet.class, query.value(), args)
-                .beginControlFlow("if (!rs.isBeforeFirst())")
-                .addStatement("return $L", query.defaultValue().isEmpty() ? "null" : query.defaultValue())
-                .endControlFlow()
-                .addStatement("rs.next()")
-                .addStatement("return $L", mapper)
-                .endControlFlow()
-                .build();
-    }
-
-    private TypeMirror getTypeParameterOf(TypeMirror typeMirror, ExecutableElement element) {
-        if (typeMirror instanceof DeclaredType type) {
-            List<? extends TypeMirror> types = type.getTypeArguments();
-            if (types.size() != 1)
-                throw new ProcessingValidationException("No parameter type was specified for DeclaredType or too may were!", element);
-            return types.getFirst();
-        }
-        throw new ProcessingValidationException("Expected DeclaredType element!", element);
-    }
-
-    private String getAutoMappingFor(TypeMirror type, int index) {
-        String mapping = this.helper.simpleMapperFor(type, index);
-        if (mapping == null)
-            return null;
-        return "rs -> " + mapping;
+        return CodeBlock.builder().build(); // TODO Simple Types or extention types (Long, String...)
     }
 }
