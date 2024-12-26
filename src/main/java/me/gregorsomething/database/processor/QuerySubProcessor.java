@@ -58,6 +58,10 @@ public class QuerySubProcessor {
 
     private CodeBlock generateCodeFor(ExecutableElement element, Query query) {
         TypeMirror type = element.getReturnType();
+        if (type.getKind().isPrimitive()) {
+            // Must be here, because primitives cause unexpected issues in other comparisons
+            return this.typeMapperCodeGenerator.forSimpleType(element, query);
+        }
         if (this.processor.isOfType(type, ResultSet.class)) {
             return this.typeMapperCodeGenerator.forResultSet(element, query);
         }

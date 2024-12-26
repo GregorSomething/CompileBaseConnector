@@ -21,5 +21,5 @@ public @interface Query {
      * On no rows returned should it throw exception
      * @return if true, error is thrown, else default value gets returned
      */
-    boolean onNoResultThrow() default true;
+    boolean onNoResultThrow() default false;
 }

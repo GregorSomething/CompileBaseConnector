@@ -4,10 +4,14 @@ import com.squareup.javapoet.CodeBlock;
 import lombok.RequiredArgsConstructor;
 import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.processor.RepositoryProcessor;
+import me.gregorsomething.database.processor.helpers.Pair;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
+import java.sql.ResultSet;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 @RequiredArgsConstructor
 public class TypeMapperCodeGenerator {
@@ -15,23 +19,62 @@ public class TypeMapperCodeGenerator {
     private final TypeMapperResolver typeMapperResolver;
 
     public CodeBlock forResultSet(ExecutableElement element, Query query) {
-        // TODO pure resultset return (ResultSet)
-        return null;
+        return CodeBlock.builder()
+                .addStatement("return this.database.query($S$L)", query.value(), this.databaseQueryArgsFor(element))
+                .build();
     }
 
     public CodeBlock forOptional(ExecutableElement element, Query query, TypeMirror optionalType) {
         // TODO Optional (Optional<Long>, Optional<String>)
-        return null;
+        return CodeBlock.builder().addStatement("return null").build();
     }
 
     public CodeBlock forList(ExecutableElement element, Query query, TypeMirror listElementType) {
         // TODO list (List<Long>, List<String>)
-        return null;
+        return CodeBlock.builder().addStatement("return null").build();
     }
 
     public CodeBlock forSimpleType(ExecutableElement element, Query query) {
-        // TODO Simple Types or extention types (Long, String...) AND Primitive types like int, long
-        return null;
+        CodeBlock.Builder code = CodeBlock.builder();
+        code.beginControlFlow("try ($T rs = this.database.query($S$L))",
+                ResultSet.class, query.value(), this.databaseQueryArgsFor(element));
+        this.insetNoRowsCheck(code, query, false, false);
+        code.addStatement("rs.next()");
+
+        // External mapper
+        if (this.typeMapperResolver.hasTypeDefFromResultSet(element.getReturnType())) {
+            Pair<TypeMirror, String> mapper = this.typeMapperResolver.getTypeMapperFromResultSet(element.getReturnType());
+            return code
+                    .addStatement("return $T.$L(rs, 1)", mapper.left(), mapper.right())
+                    .endControlFlow()
+                    .build();
+        }
+
+        // Builtin mapper
+        Pair<String, String> mapper = this.typeMapperResolver.getBuiltinMapperForType(element.getReturnType());
+        boolean needsNullCheck = this.typeMapperResolver.needsNullCheck(element.getReturnType());
+
+        // No need for null check, and null pointer cant occure here
+        if (!needsNullCheck && mapper.right() == null) {
+            code.addStatement("return rs.$L(1)", mapper.left());
+            return code.endControlFlow().build();
+        }
+
+        // If need null check or to avoid null pointer when dealing with calling other method
+        code.addStatement("var tmp = rs.$L(1)", mapper.left());
+        if (needsNullCheck) {
+            code
+                    .beginControlFlow("if (rs.wasNull())")
+                    .addStatement("return $L", query.defaultValue())
+                    .endControlFlow();
+        }
+        // Additional method call to get value to needed type
+        if (mapper.right() != null) {
+            code.addStatement("return tmp == null ? null : tmp.$L", mapper.right());
+        } else {
+            code.addStatement("return tmp");
+        }
+        return code.endControlFlow().build();
     }
 
     private String databaseQueryArgsFor(ExecutableElement element) {
@@ -40,5 +83,20 @@ public class TypeMapperCodeGenerator {
             args.append(", ").append(parameter.getSimpleName().toString());
         }
         return args.toString();
+    }
+
+    private void insetNoRowsCheck(CodeBlock.Builder code, Query query, boolean isList, boolean isOptional) {
+        code.beginControlFlow("if (!rs.isBeforeFirst())");
+        if (query.onNoResultThrow()) {
+            code.addStatement("throw new $T()", NoSuchElementException.class);
+        } else if (isList) {
+            code.addStatement("return $T.of()", List.class);
+        } else if (isOptional) {
+            code.addStatement("return $T.of()", List.class);
+        } else {
+            code.addStatement("return $L", query.defaultValue());
+        }
+        code.endControlFlow();
+
     }
 }
