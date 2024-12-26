@@ -8,6 +8,8 @@ import lombok.SneakyThrows;
 import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.processor.helpers.ElementUtils;
 import me.gregorsomething.database.processor.helpers.SqlHelper;
+import me.gregorsomething.database.processor.types.TypeMapperCodeGenerator;
+import me.gregorsomething.database.processor.types.TypeMapperResolver;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -23,6 +25,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class QuerySubProcessor {
     private final RepositoryProcessor processor;
+    private final TypeMapperCodeGenerator typeMapperCodeGenerator;
     private final SqlHelper helper;
 
     public MethodSpec createQueryMethod(ExecutableElement element) {
@@ -55,18 +58,17 @@ public class QuerySubProcessor {
 
     private CodeBlock generateCodeFor(ExecutableElement element, Query query) {
         TypeMirror type = element.getReturnType();
-        if (element.getReturnType().getKind().isPrimitive()) {
-            return CodeBlock.builder().build(); // TODO primitive (int, long)
-        }
         if (this.processor.isOfType(type, ResultSet.class)) {
-            return CodeBlock.builder().build(); // TODO pure resultset return (ResultSet)
+            return this.typeMapperCodeGenerator.forResultSet(element, query);
         }
         if (this.processor.isBaseTypeOf(type, Optional.class)) {
-            return CodeBlock.builder().build(); // TODO Optional (Optional<Long>, Optional<String>)
+            return this.typeMapperCodeGenerator.forOptional(element, query,
+                    ElementUtils.getTypeParameterOf(element.getReturnType(), element));
         }
         if (this.processor.isBaseTypeOf(type, List.class)) {
-            return CodeBlock.builder().build(); // TODO list (List<Long>, List<String>)
+            return this.typeMapperCodeGenerator.forList(element, query,
+                    ElementUtils.getTypeParameterOf(element.getReturnType(), element));
         }
-        return CodeBlock.builder().build(); // TODO Simple Types or extention types (Long, String...)
+        return this.typeMapperCodeGenerator.forSimpleType(element, query);
     }
 }

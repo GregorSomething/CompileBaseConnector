@@ -57,11 +57,42 @@ public class TypeMapperResolver {
     }
 
     /**
+     * Checks if type need null check with rs.wasNull() (types like Long are casted to long at some point,
+     * removing null, and long is not nullable, so to return def value if it was null in database,
+     * we have to check if it was null before)
+     * @param type type to check for null check need
+     * @return true if type needs null check
+     */
+    public boolean needsNullCheck(TypeMirror type) {
+        if (type.getKind().isPrimitive())
+            return true; // is int, long, byte
+        try {
+            // Only care about exception, if thrown it was not primitive value boxed
+            this.processor.getTypeUtils().unboxedType(type);
+            return true; // is Long, Integer, Byte
+        } catch (IllegalArgumentException ignored) {
+            return false; // is anything else
+        }
+    }
+
+    /**
+     * Returns type mapping for simple type like Long, String, LocalDateTime, long, int
+     * NOTE! Null checks and stuff is not included, this gives info only about result set to type
+     * @param type type to what look mapping
+     * @return pair of methods, first is for ResultSet, and second, optional, for result of ResultSet mapping
+     */
+    public Pair<String, String> getBuiltinMapperForType(TypeMirror type) {
+        if (type.getKind().isPrimitive())
+            return new Pair<>(this.getResultSetMethodForPrimitive(type.getKind()), null);
+        return this.getResultSetMethodForSimpleType(type);
+    }
+
+    /**
      * Returns ResultSet method name to read primitive type
      * @param type primitive type TypeKind
      * @return method name like getInt
      */
-    public String getResultSetMethodForPrimitive(TypeKind type) {
+    private String getResultSetMethodForPrimitive(TypeKind type) {
         return switch (type) {
             case BOOLEAN -> "getBoolean";
             case BYTE -> "getByte";
@@ -80,7 +111,7 @@ public class TypeMapperResolver {
      * @param type type to what look mapping
      * @return pair of methods, first is for ResultSet, and second, optional, for result of ResultSet mapping
      */
-    public Pair<String, String> getResultSetMethodForSimpleType(TypeMirror type) {
+    private Pair<String, String> getResultSetMethodForSimpleType(TypeMirror type) {
         if (this.processor.isOfType(type, String.class)) {
             return new Pair<>("getString", null);
         }
@@ -102,25 +133,6 @@ public class TypeMapperResolver {
             return new Pair<>(this.getResultSetMethodForPrimitive(primitiveType.getKind()), null);
         } catch (IllegalArgumentException ignored) {}
         throw new ProcessingValidationException("Unknown type: " + type.toString() + " in some repository.", null);
-    }
-
-    /**
-     * Checks if type need null check with rs.wasNull() (types like Long are casted to long at some point,
-     * removing null, and long is not nullable, so to return def value if it was null in database,
-     * we have to check if it was null before)
-     * @param type type to check for null check need
-     * @return true if type needs null check
-     */
-    public boolean needsNullCheck(TypeMirror type) {
-        if (type.getKind().isPrimitive())
-            return true; // is int, long, byte
-        try {
-            // Only care about exception, if thrown it was not primitive value boxed
-            this.processor.getTypeUtils().unboxedType(type);
-            return true; // is Long, Integer, Byte
-        } catch (IllegalArgumentException ignored) {
-            return false; // is anything else
-        }
     }
 
     private void searchFromExtension(TypeMirror classType) {

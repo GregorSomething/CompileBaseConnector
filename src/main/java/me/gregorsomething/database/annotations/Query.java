@@ -15,7 +15,7 @@ public @interface Query {
      * Used as literal in return statement like 'return ENTERED_VALUE'
      * @return return default value
      */
-    String defaultValue() default "";
+    String defaultValue() default "null";
 
     /**
      * On no rows returned should it throw exception
