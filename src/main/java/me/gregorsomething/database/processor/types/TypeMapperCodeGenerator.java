@@ -12,6 +12,7 @@ import javax.lang.model.type.TypeMirror;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class TypeMapperCodeGenerator {
@@ -25,8 +26,41 @@ public class TypeMapperCodeGenerator {
     }
 
     public CodeBlock forOptional(ExecutableElement element, Query query, TypeMirror optionalType) {
-        // TODO Optional (Optional<Long>, Optional<String>)
-        return CodeBlock.builder().addStatement("return null").build();
+        CodeBlock.Builder code = CodeBlock.builder();
+        code.beginControlFlow("try ($T rs = this.database.query($S$L))",
+                ResultSet.class, query.value(), this.databaseQueryArgsFor(element));
+        this.insetNoRowsCheck(code, query, false, false);
+        code.addStatement("rs.next()");
+
+        // External mapper
+        if (this.typeMapperResolver.hasTypeDefFromResultSet(optionalType)) {
+            Pair<TypeMirror, String> mapper = this.typeMapperResolver.getTypeMapperFromResultSet(optionalType);
+            return code
+                    .addStatement("return $T.ofNullable(T$.$L(rs, 1))", Optional.class, mapper.left(), mapper.right())
+                    .endControlFlow()
+                    .build();
+        }
+
+        // Builtin mapper
+        Pair<String, String> mapper = this.typeMapperResolver.getBuiltinMapperForType(optionalType);
+
+        // If needs null check or to avoid null pointer when dealing with calling other method
+        code.addStatement("var tmp = rs.$L(1)", mapper.left());
+        String ofMethodName = "ofNullable"; // For Optional.of..., when null check is done by db, will not need other
+        if (this.typeMapperResolver.needsNullCheck(optionalType)) {
+            code
+                    .beginControlFlow("if (rs.wasNull())")
+                    .addStatement("return $T.empty()", Optional.class)
+                    .endControlFlow();
+            ofMethodName = "of";
+        }
+        if (mapper.right() != null) {
+            code.addStatement("return $T.$L(tmp).map(v -> v.$L)", Optional.class, ofMethodName, mapper.right());
+        } else {
+            code.addStatement("return $T.$L(tmp)", Optional.class, ofMethodName);
+        }
+
+        return code.endControlFlow().build();
     }
 
     public CodeBlock forList(ExecutableElement element, Query query, TypeMirror listElementType) {
@@ -92,7 +126,7 @@ public class TypeMapperCodeGenerator {
         } else if (isList) {
             code.addStatement("return $T.of()", List.class);
         } else if (isOptional) {
-            code.addStatement("return $T.of()", List.class);
+            code.addStatement("return $T.empty()", Optional.class);
         } else {
             code.addStatement("return $L", query.defaultValue());
         }
