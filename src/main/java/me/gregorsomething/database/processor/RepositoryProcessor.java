@@ -10,7 +10,6 @@ import me.gregorsomething.database.Transactional;
 import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.annotations.Repository;
 import me.gregorsomething.database.annotations.Statement;
-import me.gregorsomething.database.processor.helpers.SqlHelper;
 import me.gregorsomething.database.processor.types.TypeMapperCodeGenerator;
 import me.gregorsomething.database.processor.types.TypeMapperResolver;
 import org.jetbrains.annotations.Nullable;
@@ -79,10 +78,9 @@ public class RepositoryProcessor extends AbstractProcessor {
     }
 
     private List<MethodSpec> createMethods(Element element, TypeMapperResolver extraTypes) {
-        SqlHelper helper = new SqlHelper(this);
         StatementSubProcessor subProcessorStatement = new StatementSubProcessor(this);
         QuerySubProcessor subProcessorQuery = new QuerySubProcessor(this,
-                new TypeMapperCodeGenerator(this, extraTypes), helper);
+                new TypeMapperCodeGenerator(this, extraTypes));
 
         final List<ExecutableElement> statementMethods = this.getMethodsWithAnnotation(element, Statement.class);
         final List<ExecutableElement> queryMethods = this.getMethodsWithAnnotation(element, Query.class);
@@ -163,7 +161,7 @@ public class RepositoryProcessor extends AbstractProcessor {
     }
 
     public void message(String message, @Nullable Element element) {
-        this.processingEnv.getMessager().printNote(message);
+        this.processingEnv.getMessager().printNote(message, element);
     }
 
     public boolean isOfType(TypeMirror type1, Class<?> type2) {

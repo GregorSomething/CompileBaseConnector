@@ -2,19 +2,14 @@ package me.gregorsomething.database.processor;
 
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.TypeName;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.processor.helpers.ElementUtils;
-import me.gregorsomething.database.processor.helpers.SqlHelper;
 import me.gregorsomething.database.processor.types.TypeMapperCodeGenerator;
-import me.gregorsomething.database.processor.types.TypeMapperResolver;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import java.sql.ResultSet;
@@ -26,7 +21,6 @@ import java.util.Optional;
 public class QuerySubProcessor {
     private final RepositoryProcessor processor;
     private final TypeMapperCodeGenerator typeMapperCodeGenerator;
-    private final SqlHelper helper;
 
     public MethodSpec createQueryMethod(ExecutableElement element) {
         Query query = this.validateQueryAnnotationOn(element);

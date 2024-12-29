@@ -131,7 +131,9 @@ public class TypeMapperResolver {
             // Long -> long unboxing
             PrimitiveType primitiveType = this.processor.getTypeUtils().unboxedType(type);
             return new Pair<>(this.getResultSetMethodForPrimitive(primitiveType.getKind()), null);
-        } catch (IllegalArgumentException ignored) {}
+        } catch (IllegalArgumentException ignored) {
+            // Ignored
+        }
         throw new ProcessingValidationException("Unknown type: " + type.toString() + " in some repository.", null);
     }
 
