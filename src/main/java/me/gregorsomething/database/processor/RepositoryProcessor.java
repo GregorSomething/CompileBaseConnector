@@ -10,7 +10,9 @@ import me.gregorsomething.database.Transactional;
 import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.annotations.Repository;
 import me.gregorsomething.database.annotations.Statement;
-import me.gregorsomething.database.processor.helpers.SqlHelper;
+import me.gregorsomething.database.processor.types.TypeMapperCodeGenerator;
+import me.gregorsomething.database.processor.types.TypeMapperResolver;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -53,11 +55,14 @@ public class RepositoryProcessor extends AbstractProcessor {
         TypeSpec.Builder builder = TypeSpec.classBuilder(element.getSimpleName().toString() + "Imp")
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(element.asType());
+        TypeMapperResolver extraTypes = new TypeMapperResolver(this);
+        extraTypes.setup(repoAnnotation);
+
         this.createConstructor(builder, repoAnnotation);
 
         try {
 
-            final List<MethodSpec> accessMethods = this.createMethods(element);
+            final List<MethodSpec> accessMethods = this.createMethods(element, extraTypes);
             builder.addMethods(accessMethods);
 
             this.addTransactionSupportIfNeeded(element, builder);
@@ -72,10 +77,10 @@ public class RepositoryProcessor extends AbstractProcessor {
         return true;
     }
 
-    private List<MethodSpec> createMethods(Element element) {
-        SqlHelper helper = new SqlHelper(this);
+    private List<MethodSpec> createMethods(Element element, TypeMapperResolver extraTypes) {
         StatementSubProcessor subProcessorStatement = new StatementSubProcessor(this);
-        QuerySubProcessor subProcessorQuery = new QuerySubProcessor(this, helper);
+        QuerySubProcessor subProcessorQuery = new QuerySubProcessor(this,
+                new TypeMapperCodeGenerator(this, extraTypes));
 
         final List<ExecutableElement> statementMethods = this.getMethodsWithAnnotation(element, Statement.class);
         final List<ExecutableElement> queryMethods = this.getMethodsWithAnnotation(element, Query.class);
@@ -146,9 +151,17 @@ public class RepositoryProcessor extends AbstractProcessor {
                 .toList();
     }
 
-    public boolean error(String message, Element element) {
+    public boolean error(String message, @Nullable Element element) {
         this.processingEnv.getMessager().printError(message, element);
         return false;
+    }
+
+    public void warning(String message, @Nullable Element element) {
+        this.processingEnv.getMessager().printWarning(message, element);
+    }
+
+    public void message(String message, @Nullable Element element) {
+        this.processingEnv.getMessager().printNote(message, element);
     }
 
     public boolean isOfType(TypeMirror type1, Class<?> type2) {

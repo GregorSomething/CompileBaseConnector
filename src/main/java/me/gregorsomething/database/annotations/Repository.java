@@ -10,7 +10,16 @@ import java.lang.annotation.Target;
 public @interface Repository {
     /**
      * Database create statements, that can be run many times
-      * @return create statements
+     * @return create statements
      */
     String[] value() default {};
+
+    /**
+     * Classes from witch to look for additional type defs. These methods must be static and have a 'signature' like
+     * <i>public static T from(ResultSet rs, int pos) throws SQLException</i>
+     * They also might contain hole row mapping like
+     * <i>public static T from(ResultSet rs, int startingPos) throws SQLException</i>
+     * @return classes from what processor searches types.
+     */
+    Class<?>[] additionalTypes() default {};
 }

@@ -36,11 +36,13 @@ dependencies {
     testCompileOnly 'com.google.auto.service:auto-service:1.1.1'
     testAnnotationProcessor 'com.google.auto.service:auto-service:1.1.1'
     testCompileOnly 'org.jetbrains:annotations:24.1.0'
+    // Includes this project as test annotation processor
     testAnnotationProcessor project
 }
 
 tasks.named('test', Test) {
     useJUnitPlatform()
+    // Includes processed annotations
     dependsOn 'compileTestJava'
 
     maxHeapSize = '1G'
