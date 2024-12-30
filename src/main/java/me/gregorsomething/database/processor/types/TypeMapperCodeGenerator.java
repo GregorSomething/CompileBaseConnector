@@ -10,6 +10,8 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -35,10 +37,8 @@ public class TypeMapperCodeGenerator {
         // External mapper
         if (this.typeMapperResolver.hasTypeDefFromResultSet(optionalType)) {
             Pair<TypeMirror, String> mapper = this.typeMapperResolver.getTypeMapperFromResultSet(optionalType);
-            return code
-                    .addStatement("return $T.ofNullable(T$.$L(rs, 1))", Optional.class, mapper.left(), mapper.right())
-                    .endControlFlow()
-                    .build();
+            code.addStatement("return $T.ofNullable(T$.$L(rs, 1))", Optional.class, mapper.left(), mapper.right());
+            return endTryBlockAndAddCatchIfNeeded(element, code);
         }
 
         // Builtin mapper
@@ -60,12 +60,58 @@ public class TypeMapperCodeGenerator {
             code.addStatement("return $T.$L(tmp)", Optional.class, ofMethodName);
         }
 
-        return code.endControlFlow().build();
+        return endTryBlockAndAddCatchIfNeeded(element, code);
     }
 
     public CodeBlock forList(ExecutableElement element, Query query, TypeMirror listElementType) {
-        // TODO list (List<Long>, List<String>)
-        return CodeBlock.builder().addStatement("return null").build();
+        CodeBlock.Builder code = CodeBlock.builder();
+        code.beginControlFlow("try ($T rs = this.database.query($S$L))",
+                ResultSet.class, query.value(), this.databaseQueryArgsFor(element));
+        this.insetNoRowsCheck(code, query, true, false);
+        code.addStatement("$T<$T> list = new $T<>();", List.class, listElementType, ArrayList.class);
+        code.beginControlFlow("while (rs.next())");
+
+        // External mapper
+        if (this.typeMapperResolver.hasTypeDefFromResultSet(listElementType)) {
+            Pair<TypeMirror, String> mapper = this.typeMapperResolver.getTypeMapperFromResultSet(listElementType);
+            code.addStatement("list.add($T.$L(rs, 1))", mapper.left(), mapper.right());
+            return endTryBlockAndAddCatchIfNeeded(element, code);
+
+        }
+
+        // Builtin mapper
+        Pair<String, String> mapper = this.typeMapperResolver.getBuiltinMapperForType(listElementType);
+        boolean needsNullCheck = this.typeMapperResolver.needsNullCheck(listElementType);
+
+        // No need for null check, and null pointer cant occure here
+        if (!needsNullCheck && mapper.right() == null) {
+            code
+                    .addStatement("list.add(rs.$L(1))", mapper.left())
+                    .endControlFlow() // While
+                    .addStatement("return list");
+            return endTryBlockAndAddCatchIfNeeded(element, code); // try
+        }
+
+        // If need null check or to avoid null pointer when dealing with calling other method
+        code.addStatement("var tmp = rs.$L(1)", mapper.left());
+        if (needsNullCheck) {
+            code
+                    .beginControlFlow("if (rs.wasNull())")
+                    .addStatement("list.add($L)", query.defaultValue())
+                    .addStatement("continue")
+                    .endControlFlow();
+        }
+        // Additional method call to get value to needed type
+        if (mapper.right() != null) {
+            code.addStatement("list.add(tmp == null ? null : tmp.$L)", mapper.right());
+        } else {
+            code.addStatement("list.add(tmp)");
+        }
+
+
+        code.endControlFlow() // while
+                .addStatement("return list");
+        return endTryBlockAndAddCatchIfNeeded(element, code); //try
     }
 
     public CodeBlock forSimpleType(ExecutableElement element, Query query) {
@@ -78,10 +124,8 @@ public class TypeMapperCodeGenerator {
         // External mapper
         if (this.typeMapperResolver.hasTypeDefFromResultSet(element.getReturnType())) {
             Pair<TypeMirror, String> mapper = this.typeMapperResolver.getTypeMapperFromResultSet(element.getReturnType());
-            return code
-                    .addStatement("return $T.$L(rs, 1)", mapper.left(), mapper.right())
-                    .endControlFlow()
-                    .build();
+            code.addStatement("return $T.$L(rs, 1)", mapper.left(), mapper.right());
+            return endTryBlockAndAddCatchIfNeeded(element, code);
         }
 
         // Builtin mapper
@@ -91,7 +135,7 @@ public class TypeMapperCodeGenerator {
         // No need for null check, and null pointer cant occure here
         if (!needsNullCheck && mapper.right() == null) {
             code.addStatement("return rs.$L(1)", mapper.left());
-            return code.endControlFlow().build();
+            return endTryBlockAndAddCatchIfNeeded(element, code);
         }
 
         // If need null check or to avoid null pointer when dealing with calling other method
@@ -108,7 +152,7 @@ public class TypeMapperCodeGenerator {
         } else {
             code.addStatement("return tmp");
         }
-        return code.endControlFlow().build();
+        return endTryBlockAndAddCatchIfNeeded(element, code);
     }
 
     private String databaseQueryArgsFor(ExecutableElement element) {
@@ -131,6 +175,14 @@ public class TypeMapperCodeGenerator {
             code.addStatement("return $L", query.defaultValue());
         }
         code.endControlFlow();
+    }
 
+    private CodeBlock endTryBlockAndAddCatchIfNeeded(ExecutableElement element, CodeBlock.Builder code) {
+        if (element.getThrownTypes().isEmpty()) {
+            code
+                    .nextControlFlow("catch ($T e)", SQLException.class)
+                    .addStatement("throw new $T(e)", RuntimeException.class);
+        }
+        return code.endControlFlow().build();
     }
 }

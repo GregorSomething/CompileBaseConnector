@@ -5,6 +5,7 @@ import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.annotations.Repository;
 import me.gregorsomething.database.annotations.Statement;
 
+import java.util.List;
 import java.util.UUID;
 
 @Repository(
@@ -24,4 +25,8 @@ public interface SampleRepository extends Transactional<SampleRepository> {
 
     @Query("SELECT 1;")
     UUID get();
+
+    @Query("SELECT bbb FROM gs_test_database1")
+    List<String> getStrings();
+
 }

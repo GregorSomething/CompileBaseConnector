@@ -32,8 +32,6 @@ public class QuerySubProcessor {
             throw new ProcessingValidationException("Only SQLException can be thrown", element);
         if (element.getThrownTypes().size() == 1)
             builder.addException(SQLException.class);
-        else
-            builder.addAnnotation(SneakyThrows.class);
 
         builder.addCode(this.generateCodeFor(element, query));
 
