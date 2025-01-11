@@ -5,6 +5,7 @@ import me.gregorsomething.database.annotations.Repository;
 import me.gregorsomething.database.processor.ProcessingValidationException;
 import me.gregorsomething.database.processor.RepositoryProcessor;
 import me.gregorsomething.database.processor.helpers.Pair;
+import me.gregorsomething.database.processor.paramater.ParameterProcessor;
 
 import javax.lang.model.element.*;
 import javax.lang.model.type.MirroredTypesException;
@@ -113,24 +114,24 @@ public class TypeMapperResolver {
      */
     private Pair<String, String> getResultSetMethodForSimpleType(TypeMirror type) {
         if (this.processor.isOfType(type, String.class)) {
-            return new Pair<>("getString", null);
+            return Pair.of("getString", null);
         }
         if (this.processor.isOfType(type, LocalDateTime.class)) {
-            return new Pair<>("getTimestamp", "toLocalDateTime()");
+            return Pair.of("getTimestamp", "toLocalDateTime()");
         }
         if (this.processor.isOfType(type, Instant.class)) {
-            return new Pair<>("getTimestamp", "toInstant()");
+            return Pair.of("getTimestamp", "toInstant()");
         }
         if (this.processor.isOfType(type, LocalDate.class)) {
-            return new Pair<>("getDate", "toLocalDate()");
+            return Pair.of("getDate", "toLocalDate()");
         }
         if (this.processor.isOfType(type, LocalTime.class)) {
-            return new Pair<>("getTime", "toLocalTime()");
+            return Pair.of("getTime", "toLocalTime()");
         }
         try {
             // Long -> long unboxing
             PrimitiveType primitiveType = this.processor.getTypeUtils().unboxedType(type);
-            return new Pair<>(this.getResultSetMethodForPrimitive(primitiveType.getKind()), null);
+            return Pair.of(this.getResultSetMethodForPrimitive(primitiveType.getKind()), null);
         } catch (IllegalArgumentException ignored) {
             // Ignored
         }
@@ -153,7 +154,7 @@ public class TypeMapperResolver {
     private void processMethod(ExecutableElement element, Element parent) {
         if (!this.isCorrectSignatureForTypeDef(element, parent))
             return;
-        this.typesMapped.put(element.getReturnType(), new Pair<>(parent.asType(), element.getSimpleName().toString()));
+        this.typesMapped.put(element.getReturnType(), Pair.of(parent.asType(), element.getSimpleName().toString()));
     }
 
     private boolean isCorrectSignatureForTypeDef(ExecutableElement element, Element parent) {

@@ -4,8 +4,11 @@ import com.squareup.javapoet.CodeBlock;
 import lombok.RequiredArgsConstructor;
 import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.processor.RepositoryProcessor;
+import me.gregorsomething.database.processor.helpers.ElementUtils;
 import me.gregorsomething.database.processor.helpers.Pair;
+import me.gregorsomething.database.processor.paramater.ParameterProcessor;
 
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
@@ -20,18 +23,17 @@ import java.util.Optional;
 public class TypeMapperCodeGenerator {
     private final RepositoryProcessor processor;
     private final TypeMapperResolver typeMapperResolver;
+    private final ParameterProcessor parameterProcessor;
 
     public CodeBlock forResultSet(ExecutableElement element, Query query) {
+        Pair<String, String> queryParams = this.parameterProcessor.queryParametersFor(element, query);
         return CodeBlock.builder()
-                .addStatement("return this.database.query($S$L)", query.value(), this.databaseQueryArgsFor(element))
+                .addStatement("return this.database.query($S$L)", queryParams.left(), queryParams.right())
                 .build();
     }
 
     public CodeBlock forOptional(ExecutableElement element, Query query, TypeMirror optionalType) {
-        CodeBlock.Builder code = CodeBlock.builder();
-        code.beginControlFlow("try ($T rs = this.database.query($S$L))",
-                ResultSet.class, query.value(), this.databaseQueryArgsFor(element));
-        this.insetNoRowsCheck(code, query, false, false);
+        CodeBlock.Builder code = codeBlockStartForDatabaseQuery(element, query, false, true);
         code.addStatement("rs.next()");
 
         // External mapper
@@ -64,10 +66,7 @@ public class TypeMapperCodeGenerator {
     }
 
     public CodeBlock forList(ExecutableElement element, Query query, TypeMirror listElementType) {
-        CodeBlock.Builder code = CodeBlock.builder();
-        code.beginControlFlow("try ($T rs = this.database.query($S$L))",
-                ResultSet.class, query.value(), this.databaseQueryArgsFor(element));
-        this.insetNoRowsCheck(code, query, true, false);
+        CodeBlock.Builder code = codeBlockStartForDatabaseQuery(element, query, true, false);
         code.addStatement("$T<$T> list = new $T<>();", List.class, listElementType, ArrayList.class);
         code.beginControlFlow("while (rs.next())");
 
@@ -94,6 +93,7 @@ public class TypeMapperCodeGenerator {
 
         // If need null check or to avoid null pointer when dealing with calling other method
         code.addStatement("var tmp = rs.$L(1)", mapper.left());
+        isDefaultOkForReturnType(listElementType, query, element);
         if (needsNullCheck) {
             code
                     .beginControlFlow("if (rs.wasNull())")
@@ -115,10 +115,7 @@ public class TypeMapperCodeGenerator {
     }
 
     public CodeBlock forSimpleType(ExecutableElement element, Query query) {
-        CodeBlock.Builder code = CodeBlock.builder();
-        code.beginControlFlow("try ($T rs = this.database.query($S$L))",
-                ResultSet.class, query.value(), this.databaseQueryArgsFor(element));
-        this.insetNoRowsCheck(code, query, false, false);
+        CodeBlock.Builder code = codeBlockStartForDatabaseQuery(element, query, false, false);
         code.addStatement("rs.next()");
 
         // External mapper
@@ -141,6 +138,7 @@ public class TypeMapperCodeGenerator {
         // If need null check or to avoid null pointer when dealing with calling other method
         code.addStatement("var tmp = rs.$L(1)", mapper.left());
         if (needsNullCheck) {
+            isDefaultOkForReturnType(element.getReturnType(), query, element);
             code
                     .beginControlFlow("if (rs.wasNull())")
                     .addStatement("return $L", query.defaultValue())
@@ -155,12 +153,13 @@ public class TypeMapperCodeGenerator {
         return endTryBlockAndAddCatchIfNeeded(element, code);
     }
 
-    private String databaseQueryArgsFor(ExecutableElement element) {
-        StringBuilder args = new StringBuilder();
-        for (VariableElement parameter : element.getParameters()) {
-            args.append(", ").append(parameter.getSimpleName().toString());
-        }
-        return args.toString();
+    private CodeBlock.Builder codeBlockStartForDatabaseQuery(ExecutableElement element, Query query, boolean isList, boolean isOptional) {
+        CodeBlock.Builder code = CodeBlock.builder();
+        Pair<String, String> queryParams = this.parameterProcessor.queryParametersFor(element, query);
+        code.beginControlFlow("try ($T rs = this.database.query($S$L))",
+                ResultSet.class, queryParams.left(), queryParams.right());
+        this.insetNoRowsCheck(code, query, isList, isOptional);
+        return code;
     }
 
     private void insetNoRowsCheck(CodeBlock.Builder code, Query query, boolean isList, boolean isOptional) {
@@ -184,5 +183,11 @@ public class TypeMapperCodeGenerator {
                     .addStatement("throw new $T(e)", RuntimeException.class);
         }
         return code.endControlFlow().build();
+    }
+
+    private void isDefaultOkForReturnType(TypeMirror type, Query query, Element errorToThis) {
+        if (type.getKind().isPrimitive() && query.defaultValue().equals("null")) {
+            this.processor.error("For primitive types default value must be manually set!", errorToThis);
+        }
     }
 }

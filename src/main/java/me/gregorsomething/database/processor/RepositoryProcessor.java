@@ -10,6 +10,7 @@ import me.gregorsomething.database.Transactional;
 import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.annotations.Repository;
 import me.gregorsomething.database.annotations.Statement;
+import me.gregorsomething.database.processor.paramater.ParameterProcessor;
 import me.gregorsomething.database.processor.types.TypeMapperCodeGenerator;
 import me.gregorsomething.database.processor.types.TypeMapperResolver;
 import org.jetbrains.annotations.Nullable;
@@ -55,6 +56,7 @@ public class RepositoryProcessor extends AbstractProcessor {
         TypeSpec.Builder builder = TypeSpec.classBuilder(element.getSimpleName().toString() + "Imp")
                 .addModifiers(Modifier.PUBLIC)
                 .addSuperinterface(element.asType());
+
         TypeMapperResolver extraTypes = new TypeMapperResolver(this);
         extraTypes.setup(repoAnnotation);
 
@@ -80,7 +82,7 @@ public class RepositoryProcessor extends AbstractProcessor {
     private List<MethodSpec> createMethods(Element element, TypeMapperResolver extraTypes) {
         StatementSubProcessor subProcessorStatement = new StatementSubProcessor(this);
         QuerySubProcessor subProcessorQuery = new QuerySubProcessor(this,
-                new TypeMapperCodeGenerator(this, extraTypes));
+                new TypeMapperCodeGenerator(this, extraTypes, new ParameterProcessor(this)));
 
         final List<ExecutableElement> statementMethods = this.getMethodsWithAnnotation(element, Statement.class);
         final List<ExecutableElement> queryMethods = this.getMethodsWithAnnotation(element, Query.class);
