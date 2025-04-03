@@ -13,7 +13,7 @@ public class ComplexTypeClass {
         this.ccc = ccc;
     }
 
-    public static ComplexTypeClass of(int aaa, String bbb) {
+    public static ComplexTypeClass of(Integer aaa, String bbb) {
         return new ComplexTypeClass(aaa, bbb, null);
     }
 }

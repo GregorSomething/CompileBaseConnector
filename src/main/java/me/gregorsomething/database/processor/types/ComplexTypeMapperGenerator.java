@@ -80,6 +80,11 @@ public class ComplexTypeMapperGenerator {
                         .addStatement("$T $L = $LTmp == null ? null : $LTmp.$L", TypeName.get(type), varName, varName, varName, mapper.right());
             } else {
                 code.addStatement("$T $L = rs.$L($L)", TypeName.get(variableElement.asType()), varName, mapper.left(), resultSetPos);
+                if (!type.getKind().isPrimitive() && this.typeMapperResolver.needsNullCheck(type)) {
+                    code.beginControlFlow("if (rs.wasNull())")
+                            .addStatement("$L = null", varName)
+                            .endControlFlow();
+                }
             }
         }
     }
