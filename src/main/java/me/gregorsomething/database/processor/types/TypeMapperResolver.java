@@ -1,11 +1,12 @@
 package me.gregorsomething.database.processor.types;
 
+import com.squareup.javapoet.TypeSpec;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import me.gregorsomething.database.annotations.Repository;
 import me.gregorsomething.database.processor.ProcessingValidationException;
 import me.gregorsomething.database.processor.RepositoryProcessor;
 import me.gregorsomething.database.processor.helpers.Pair;
-import me.gregorsomething.database.processor.paramater.ParameterProcessor;
 
 import javax.lang.model.element.*;
 import javax.lang.model.type.MirroredTypesException;
@@ -18,15 +19,20 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RequiredArgsConstructor
 public class TypeMapperResolver {
 
     private final RepositoryProcessor processor;
+    /**
+     * -- GETTER --
+     *  Returns current repository builder
+     *
+     * @return current repository's code gen
+     */
+    @Getter
+    private final TypeSpec.Builder currentRepoBuilder;
     private final Map<TypeMirror, Pair<TypeMirror, String>> typesMapped = new HashMap<>();
 
     /**
@@ -86,6 +92,32 @@ public class TypeMapperResolver {
         if (type.getKind().isPrimitive())
             return new Pair<>(this.getResultSetMethodForPrimitive(type.getKind()), null);
         return this.getResultSetMethodForSimpleType(type);
+    }
+
+    /**
+     * Checks if type has builtin mapper
+     * @param type type to check
+     * @return true if it has builtin mapper, ig type is Integer, int LocalDate...
+     */
+    public boolean hasBuiltinMapperForType(TypeMirror type) {
+        if (type.getKind().isPrimitive()) return true;
+        try {
+            this.processor.getTypeUtils().unboxedType(type);
+            return true;
+        } catch (Exception ignored) {}
+        if (this.processor.isOfType(type, String.class)) {
+            return true;
+        }
+        if (this.processor.isOfType(type, LocalDateTime.class)) {
+            return true;
+        }
+        if (this.processor.isOfType(type, Instant.class)) {
+            return true;
+        }
+        if (this.processor.isOfType(type, LocalDate.class)) {
+            return true;
+        }
+        return this.processor.isOfType(type, LocalTime.class);
     }
 
     /**

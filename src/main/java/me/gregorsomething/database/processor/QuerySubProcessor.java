@@ -3,7 +3,6 @@ package me.gregorsomething.database.processor;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.processor.helpers.ElementUtils;
 import me.gregorsomething.database.processor.types.TypeMapperCodeGenerator;
@@ -52,7 +51,7 @@ public class QuerySubProcessor {
         TypeMirror type = element.getReturnType();
         if (type.getKind().isPrimitive()) {
             // Must be here, because primitives cause unexpected issues in other comparisons
-            return this.typeMapperCodeGenerator.forSimpleType(element, query);
+            return this.typeMapperCodeGenerator.forType(element, query);
         }
         if (this.processor.isOfType(type, ResultSet.class)) {
             return this.typeMapperCodeGenerator.forResultSet(element, query);
@@ -65,6 +64,6 @@ public class QuerySubProcessor {
             return this.typeMapperCodeGenerator.forList(element, query,
                     ElementUtils.getTypeParameterOf(element.getReturnType(), element));
         }
-        return this.typeMapperCodeGenerator.forSimpleType(element, query);
+        return this.typeMapperCodeGenerator.forType(element, query);
     }
 }

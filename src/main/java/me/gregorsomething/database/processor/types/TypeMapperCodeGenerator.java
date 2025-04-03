@@ -4,13 +4,11 @@ import com.squareup.javapoet.CodeBlock;
 import lombok.RequiredArgsConstructor;
 import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.processor.RepositoryProcessor;
-import me.gregorsomething.database.processor.helpers.ElementUtils;
 import me.gregorsomething.database.processor.helpers.Pair;
 import me.gregorsomething.database.processor.paramater.ParameterProcessor;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -24,6 +22,7 @@ public class TypeMapperCodeGenerator {
     private final RepositoryProcessor processor;
     private final TypeMapperResolver typeMapperResolver;
     private final ParameterProcessor parameterProcessor;
+    private final ComplexTypeResolver complexTypeResolver;
 
     public CodeBlock forResultSet(ExecutableElement element, Query query) {
         Pair<String, String> queryParams = this.parameterProcessor.queryParametersFor(element, query);
@@ -40,6 +39,12 @@ public class TypeMapperCodeGenerator {
         if (this.typeMapperResolver.hasTypeDefFromResultSet(optionalType)) {
             Pair<TypeMirror, String> mapper = this.typeMapperResolver.getTypeMapperFromResultSet(optionalType);
             code.addStatement("return $T.ofNullable(T$.$L(rs, 1))", Optional.class, mapper.left(), mapper.right());
+            return endTryBlockAndAddCatchIfNeeded(element, code);
+        }
+        // Complex type mapping
+        if (!this.typeMapperResolver.hasBuiltinMapperForType(optionalType)) {
+            String methodName = this.complexTypeResolver.tryResolveType(element, query, optionalType);
+            code.addStatement("return $T.ofNullable(this.$L(rs))", Optional.class, methodName);
             return endTryBlockAndAddCatchIfNeeded(element, code);
         }
 
@@ -74,8 +79,14 @@ public class TypeMapperCodeGenerator {
         if (this.typeMapperResolver.hasTypeDefFromResultSet(listElementType)) {
             Pair<TypeMirror, String> mapper = this.typeMapperResolver.getTypeMapperFromResultSet(listElementType);
             code.addStatement("list.add($T.$L(rs, 1))", mapper.left(), mapper.right());
+            code.endControlFlow().addStatement("return list");
             return endTryBlockAndAddCatchIfNeeded(element, code);
-
+        }
+        if (!this.typeMapperResolver.hasBuiltinMapperForType(listElementType)) {
+            String methodName = this.complexTypeResolver.tryResolveType(element, query, listElementType);
+            code.addStatement("list.add(this.$L(rs))", methodName);
+            code.endControlFlow().addStatement("return list");
+            return endTryBlockAndAddCatchIfNeeded(element, code);
         }
 
         // Builtin mapper
@@ -114,7 +125,7 @@ public class TypeMapperCodeGenerator {
         return endTryBlockAndAddCatchIfNeeded(element, code); //try
     }
 
-    public CodeBlock forSimpleType(ExecutableElement element, Query query) {
+    public CodeBlock forType(ExecutableElement element, Query query) {
         CodeBlock.Builder code = codeBlockStartForDatabaseQuery(element, query, false, false);
         code.addStatement("rs.next()");
 
@@ -122,6 +133,13 @@ public class TypeMapperCodeGenerator {
         if (this.typeMapperResolver.hasTypeDefFromResultSet(element.getReturnType())) {
             Pair<TypeMirror, String> mapper = this.typeMapperResolver.getTypeMapperFromResultSet(element.getReturnType());
             code.addStatement("return $T.$L(rs, 1)", mapper.left(), mapper.right());
+            return endTryBlockAndAddCatchIfNeeded(element, code);
+
+        }
+        // Complex type mapping
+        if (!this.typeMapperResolver.hasBuiltinMapperForType(element.getReturnType())) {
+            String methodName = this.complexTypeResolver.tryResolveType(element, query, element.getReturnType());
+            code.addStatement("return this.$L(rs)", methodName);
             return endTryBlockAndAddCatchIfNeeded(element, code);
         }
 

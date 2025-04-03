@@ -19,9 +19,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ParameterProcessor {
 
-    private final Pattern placeholderRegex = Pattern.compile("\\[\\([^\\[]+\\)]");
+    private static final Pattern PLACEHOLDER_REGEX = Pattern.compile("\\[\\([^\\[]+\\)]");
 
     private final RepositoryProcessor processor;
+
+    /**
+     * Replaces placeholders in SQL query with '?'
+     * @param sqlQuery query where to remove placeholders
+     * @return query without placeholders
+     */
+    public static String removePlaceholders(String sqlQuery) {
+        return PLACEHOLDER_REGEX.matcher(sqlQuery).replaceAll("?");
+    }
 
     /**
      * Processes sql query
@@ -46,7 +55,7 @@ public class ParameterProcessor {
      * Processes [(...)] to usable formats
      */
     private Pair<String, String> queryParametersFromElementProcessing(ExecutableElement element, Query query, List<String> toProcess) {
-        String newQuery = this.placeholderRegex.matcher(query.value()).replaceAll("?");
+        String newQuery = PLACEHOLDER_REGEX.matcher(query.value()).replaceAll("?");
 
         if (element.getParameters().isEmpty()) {
             this.processor.error("If query has [(...)] parameter, method must have parameters", element);
@@ -128,7 +137,7 @@ public class ParameterProcessor {
     }
 
     private List<String> findReplaceable(String query) {
-        Matcher matcher = placeholderRegex.matcher(query);
+        Matcher matcher = PLACEHOLDER_REGEX.matcher(query);
 
         List<String> res = new ArrayList<>();
         while (matcher.find()) {
