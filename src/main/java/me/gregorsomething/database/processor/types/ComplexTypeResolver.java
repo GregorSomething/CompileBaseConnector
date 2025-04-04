@@ -13,7 +13,10 @@ import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectItem;
 
-import javax.lang.model.element.*;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import java.util.ArrayList;
@@ -60,9 +63,9 @@ public class ComplexTypeResolver {
         List<Pair<Integer, String>> selectedItems = this.getSelectedItemNames(pureQuery, element);
         Element returnType = this.processor.getTypeUtils().asElement(type);
         if (returnType instanceof TypeElement typeElement) {
-            if (this.findSuitableStaticMethodFromClass(typeElement, selectedItems, methodName))
+            if (this.findSuitableStaticMethodFromClass(typeElement, type, selectedItems, methodName))
                 return; // Successfully found and generated method to mapped, can return method name
-            if (this.findSuitableConstructorFromClass(typeElement, selectedItems, methodName))
+            if (this.findSuitableConstructorFromClass(typeElement, type, selectedItems, methodName))
                 return; // Successfully found and generated method to mapped, can return method name
             throw new ProcessingValidationException("Auto type mapper failed to find suitable instantiation method", element);
         }
@@ -70,21 +73,21 @@ public class ComplexTypeResolver {
                 + returnType.getKind().toString(), element);
     }
 
-    private boolean findSuitableConstructorFromClass(TypeElement returnType, List<Pair<Integer, String>> selectedItems, String methodName) {
+    private boolean findSuitableConstructorFromClass(TypeElement returnType, TypeMirror returnTypeMirror, List<Pair<Integer, String>> selectedItems, String methodName) {
         Set<String> itemNames = selectedItems.stream().map(Pair::right).map(String::toLowerCase).collect(Collectors.toSet());
         Optional<ExecutableElement> constructor = this.hasTypeMatchingConstructor(returnType, itemNames);
         if (constructor.isEmpty())
             return false;
-        this.generator.generateMapperMethodForTypeWithConstructor(returnType, selectedItems, methodName, constructor.get());
+        this.generator.generateMapperMethodForTypeWithConstructor(returnTypeMirror, selectedItems, methodName, constructor.get());
         return true;
     }
 
-    private boolean findSuitableStaticMethodFromClass(TypeElement returnType, List<Pair<Integer, String>> selectedItems, String methodName) {
+    private boolean findSuitableStaticMethodFromClass(TypeElement returnType, TypeMirror returnTypeMirror, List<Pair<Integer, String>> selectedItems, String methodName) {
         Set<String> itemNames = selectedItems.stream().map(Pair::right).map(String::toLowerCase).collect(Collectors.toSet());
         Optional<ExecutableElement> method = this.hasTypeMatchingStaticMethod(returnType, itemNames);
         if (method.isEmpty())
             return false;
-        this.generator.generateMapperMethodForTypeWithStaticMethod(returnType, selectedItems, methodName, method.get());
+        this.generator.generateMapperMethodForTypeWithStaticMethod(returnTypeMirror, selectedItems, methodName, method.get());
         return true;
     }
 
@@ -110,9 +113,9 @@ public class ComplexTypeResolver {
         if (item.getExpression() instanceof AllColumns) {
             throw new ProcessingValidationException("Complex query does not support wildcard", element);
         } else if (item.getAliasName() != null) {
-            return item.getAliasName();
+            return item.getAliasName().replaceAll("['\"`]", "");
         } else if (item.getExpression() instanceof Column column) {
-            return column.getColumnName();
+            return column.getColumnName().replaceAll("['\"`]", "");
         } else {
             throw new ProcessingValidationException("Use 'as' or select column directly", element);
         }
@@ -133,6 +136,7 @@ public class ComplexTypeResolver {
     private Optional<ExecutableElement> hasTypeMatchingStaticMethod(TypeElement returnType, Set<String> itemNames) {
         return ElementFilter.methodsIn(returnType.getEnclosedElements()).stream()
                 .filter(m -> m.getModifiers().containsAll(List.of(Modifier.PUBLIC, Modifier.STATIC)))
+                // TODO Next line will not work with static generics as their type is some generic
                 .filter(m -> this.processor.getTypeUtils().isAssignable(m.getReturnType(), returnType.asType()))
                 .filter(m -> {
                     Set<String> paramArgs = m.getParameters().stream()

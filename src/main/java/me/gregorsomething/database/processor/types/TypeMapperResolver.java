@@ -19,7 +19,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 public class TypeMapperResolver {
@@ -167,7 +170,7 @@ public class TypeMapperResolver {
         } catch (IllegalArgumentException ignored) {
             // Ignored
         }
-        throw new ProcessingValidationException("Unknown type: " + type.toString() + " in some repository.", null);
+        throw new ProcessingValidationException("Unknown type: " + type.toString() + " in repository.", null);
     }
 
     private void searchFromExtension(TypeMirror classType) {

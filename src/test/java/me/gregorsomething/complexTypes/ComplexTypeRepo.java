@@ -2,6 +2,7 @@ package me.gregorsomething.complexTypes;
 
 import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.annotations.Repository;
+import me.gregorsomething.database.processor.helpers.Pair;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,5 +21,11 @@ public interface ComplexTypeRepo {
 
     @Query(value = "SELECT bbb, aaa, 1 as ccc FROM gs_test_database2;")
     List<ComplexTypeClass> getComplexTypeList();
+
+    @Query(value = "SELECT 1 as 'left', 2 as 'right';")
+    Optional<Pair<Integer, Long>> getPair();
+
+    @Query(value = "SELECT 1 as 'left', 2 as 'right';")
+    Pair<Integer, Long> getPair2();
 
 }

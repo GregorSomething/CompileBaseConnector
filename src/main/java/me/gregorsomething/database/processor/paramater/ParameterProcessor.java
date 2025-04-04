@@ -55,7 +55,7 @@ public class ParameterProcessor {
      * Processes [(...)] to usable formats
      */
     private Pair<String, String> queryParametersFromElementProcessing(ExecutableElement element, Query query, List<String> toProcess) {
-        String newQuery = PLACEHOLDER_REGEX.matcher(query.value()).replaceAll("?");
+        String newQuery = removePlaceholders(query.value());
 
         if (element.getParameters().isEmpty()) {
             this.processor.error("If query has [(...)] parameter, method must have parameters", element);
