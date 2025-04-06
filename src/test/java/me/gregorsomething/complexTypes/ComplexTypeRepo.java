@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository("CREATE TABLE IF NOT EXISTS gs_test_database2 (aaa INT PRIMARY KEY, bbb TEXT);")
 public interface ComplexTypeRepo {
 
+    /* Compiler automapping generation test (fail when get compilation error) */
     @Query(value = "SELECT bbb, aaa, 1 as ccc FROM gs_test_database2 LIMIT 1;")
     ComplexTypeClass getComplexType();
 
@@ -27,5 +28,10 @@ public interface ComplexTypeRepo {
 
     @Query(value = "SELECT 1 as 'left', 2 as 'right';")
     Pair<Integer, Long> getPair2();
+
+    /* Autotesting method */
+
+    @Query(value = "SELECT [( intVal )] as 'left', [( longVal )] as 'right';")
+    Pair<Integer, Long> getPair(Integer intVal, Long longVal);
 
 }

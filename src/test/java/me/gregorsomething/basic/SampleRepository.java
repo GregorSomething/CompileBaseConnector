@@ -23,7 +23,7 @@ public interface SampleRepository extends Transactional<SampleRepository> {
     @Query("SELECT bbb FROM gs_test_database1 WHERE aaa = ? LIMIT 1;")
     String get(int id);
 
-    @Query("SELECT 1 ;")
+    @Query("SELECT 1;")
     UUID get();
 
     @Query("SELECT bbb FROM gs_test_database1")

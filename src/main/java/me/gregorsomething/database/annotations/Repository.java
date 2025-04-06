@@ -15,8 +15,8 @@ public @interface Repository {
     String[] value() default {};
 
     /**
-     * Classes from witch to look for additional type defs. These methods must be static and have a 'signature' like
-     * <i>public static T from(ResultSet rs, int pos) throws SQLException</i>
+     * Classes from witch to look for additional type defs. These methods must be static and have "signature" like
+     * <code>public static T from(ResultSet rs, int pos) throws SQLException</code>
      * They also might contain hole row mapping like
      * <i>public static T from(ResultSet rs, int startingPos) throws SQLException</i>
      * @return classes from what processor searches types.
