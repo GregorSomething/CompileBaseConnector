@@ -3,13 +3,15 @@ package me.gregorsomething.types;
 import me.gregorsomething.database.Database;
 import me.gregorsomething.database.DatabaseIntTest;
 import me.gregorsomething.database.RepositoryProvider;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TypesRepositoryIntTest {
+class TypesRepositoryIntTest {
 
     private static Database database;
     private static TypesRepository repo;
@@ -18,7 +20,6 @@ public class TypesRepositoryIntTest {
     static void setup() throws SQLException {
         database = DatabaseIntTest.makeTest();
         repo = RepositoryProvider.create(TypesRepository.class, database);
-        database.execute("INSERT INTO gs_test_database1 "); // TODO Complete
     }
 
     @AfterAll
@@ -28,25 +29,21 @@ public class TypesRepositoryIntTest {
 
     @Test
     void testInt() {
-        repo.setInt(1);
-        assertEquals(1, repo.getInt());
-        assertEquals(1, repo.getInt2());
-        assertEquals(1, repo.getInt3().orElseThrow());
-        repo.setInt(null);
-        assertEquals(-1, repo.getInt());
-        assertNull(repo.getInt2());
-        assertTrue(repo.getInt3().isEmpty());
+        assertEquals(1, repo.getInt(1));
+        assertEquals(1, repo.getInt2(1));
+        assertEquals(1, repo.getInt3(1).orElseThrow());
+        assertEquals(-1, repo.getInt(null));
+        assertNull(repo.getInt2(null));
+        assertTrue(repo.getInt3(null).isEmpty());
     }
 
     @Test
     void testLong() {
-        repo.setLong(1L);
-        assertEquals(1, repo.getLong());
-        assertEquals(1, repo.getLong2());
-        assertEquals(1, repo.getLong3().orElseThrow());
-        repo.setLong(null);
-        assertEquals(-1, repo.getLong());
-        assertNull(repo.getLong2());
-        assertTrue(repo.getLong3().isEmpty());
+        assertEquals(1, repo.getLong(1L));
+        assertEquals(1, repo.getLong2(1L));
+        assertEquals(1, repo.getLong3(1L).orElseThrow());
+        assertEquals(-1, repo.getLong(null));
+        assertNull(repo.getLong2(null));
+        assertTrue(repo.getLong3(null).isEmpty());
     }
 }

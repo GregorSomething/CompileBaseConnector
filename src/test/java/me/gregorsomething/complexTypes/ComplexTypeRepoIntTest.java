@@ -56,7 +56,7 @@ class ComplexTypeRepoIntTest {
 
         Pair<Integer, Long> p3 = repo.getPair(7, null);
         assertEquals(7, p3.left());
-        assertNull(p1.right());
+        assertNull(p3.right());
     }
 
 
