@@ -17,7 +17,9 @@ repositories {
 
 dependencies {
     // MariaDB Java client
-    implementation 'org.mariadb.jdbc:mariadb-java-client:2.7.3'
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.3'
+    // Postgres
+    implementation 'org.postgresql:postgresql:42.7.5'
 
     // Code generation
     implementation 'com.squareup:javapoet:1.13.0'

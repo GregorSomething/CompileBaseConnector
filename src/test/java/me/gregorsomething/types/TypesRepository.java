@@ -30,18 +30,18 @@ public interface TypesRepository {
     @Query("SELECT [( val )];")
     Optional<Long> getLong3(Long val);
 
-    @Query("SELECT istring FROM gs_test_database2 LIMIT 1;")
-    String getString();
+    @Query("SELECT [( val )];")
+    String getString(String val);
 
-    @Query("SELECT idate FROM gs_test_database2 LIMIT 1;")
-    LocalDate getLocalDate();
+    @Query("SELECT [( val )]::date;")
+    LocalDate getLocalDate(LocalDate val);
 
-    @Query("SELECT idatetime FROM gs_test_database2 LIMIT 1;")
-    LocalDateTime getLocalDateTime();
+    @Query("SELECT [( val )]::datetime;")
+    LocalDateTime getLocalDateTime(LocalDateTime val);
 
-    @Query("SELECT itime FROM gs_test_database2 LIMIT 1;")
-    LocalTime getTime();
+    @Query("SELECT [( val )]::time;")
+    LocalTime getTime(LocalTime val);
 
-    @Query("SELECT iinstant FROM gs_test_database2 LIMIT 1;")
-    Instant getInstant();
+    @Query("SELECT [( val )]::datetime;")
+    Instant getInstant(Instant val);
 }

@@ -15,18 +15,21 @@ public class DatabaseIntTest {
     private static Database database;
 
     @BeforeAll
-    public static void setup() throws SQLException {
+    public static void setup() {
         database = makeTest();
     }
 
-    public static Database makeTest() throws SQLException {
-        return Database.detailsBuilder()
+    public static Database makeTest() {
+        DatabaseDetails details = Database.detailsBuilder()
                 .dbURL("127.0.0.1")
-                .user("user1")
-                .password("password")
-                .maxPoolSize(3)
+                //.user("user1")
+                //.password("password")
+                //.maxPoolSize(3)
+                .user("postgres")
+                .password("postgres")
                 .dbName("test")
-                .build().asMariaDb();
+                .build();
+        return PostgresDatabaseProvider.of(details);
     }
 
     @AfterAll

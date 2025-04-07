@@ -31,7 +31,9 @@ public interface ComplexTypeRepo {
 
     /* Autotesting method */
 
-    @Query(value = "SELECT [( intVal )] as 'left', [( longVal )] as 'right';")
+    @Query(value = """
+            SELECT [( intVal )] as "left", [( longVal )] as "right";
+            """)
     Pair<Integer, Long> getPair(Integer intVal, Long longVal);
 
 }

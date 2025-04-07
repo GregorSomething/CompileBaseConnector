@@ -15,16 +15,15 @@ public class TransactionalDatabase implements Database {
 
     @Override
     public ResultSet query(String query, Object... values) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            try {
-                for (int i = 1; i <= values.length; i++) {
-                    statement.setObject(i, values[i - 1]);
-                }
-                return statement.executeQuery();
-
-            } finally {
-                statement.closeOnCompletion();
+        PreparedStatement statement = connection.prepareStatement(query);
+        try {
+            for (int i = 1; i <= values.length; i++) {
+                statement.setObject(i, values[i - 1]);
             }
+            return statement.executeQuery();
+
+        } finally {
+            statement.closeOnCompletion();
         }
     }
 

@@ -9,6 +9,9 @@ import java.util.Optional;
 
 public interface Database {
 
+    /**
+     * Provided result set must be closed, otherwise statement will be not closed
+     */
     ResultSet query(String query, Object... values) throws SQLException;
 
     void execute(String query, Object... values) throws SQLException;

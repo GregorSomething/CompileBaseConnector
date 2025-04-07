@@ -1,27 +1,16 @@
 package me.gregorsomething.database;
 
-import org.mariadb.jdbc.MariaDbPoolDataSource;
+import lombok.RequiredArgsConstructor;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class MariaDBDatabase implements Database {
-    private final MariaDbPoolDataSource dataSource;
-
-
-    public MariaDBDatabase(DatabaseDetails details) throws SQLException {
-        try {
-            Class.forName("org.mariadb.jdbc.Driver");
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-        this.dataSource = new MariaDbPoolDataSource();
-        this.dataSource.setUrl("jdbc:mariadb://" + details.dbURL() +
-                "/" + details.dbName() + "?user=" + details.user() + "&password=" + details.password());
-        this.dataSource.setMaxPoolSize(details.maxPoolSize());
-    }
+@RequiredArgsConstructor
+public class DataSourceDatabase implements Database {
+    private final DataSource dataSource;
 
     /**
      * Queries data form database
@@ -30,9 +19,9 @@ public class MariaDBDatabase implements Database {
      * @return Result of query, close after use
      */
     public ResultSet query(String query, Object... values) throws SQLException {
-        try (Connection connection = this.dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
-
+        try (Connection connection = this.dataSource.getConnection()) {
+            // Later that statement.closeOnCompletion() will close this as well;
+            PreparedStatement statement = connection.prepareStatement(query);
             try {
                 for (int i = 1; i <= values.length; i++) {
                     statement.setObject(i, values[i - 1]);
@@ -72,6 +61,6 @@ public class MariaDBDatabase implements Database {
      * Closes connection to database
      */
     public void close() {
-        this.dataSource.close();
+        //this.dataSource.close();
     }
 }

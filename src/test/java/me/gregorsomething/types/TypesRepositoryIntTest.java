@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,5 +46,17 @@ class TypesRepositoryIntTest {
         assertEquals(-1, repo.getLong(null));
         assertNull(repo.getLong2(null));
         assertTrue(repo.getLong3(null).isEmpty());
+    }
+
+    @Test
+    void testString() {
+        assertNull(repo.getString(null));
+        assertEquals("test", repo.getString("test"));
+    }
+
+    @Test
+    void testDate() {
+        assertNull(repo.getLocalDate(null));
+        assertEquals(LocalDate.of(2025, 3, 1), repo.getLocalDate(LocalDate.of(2025, 3, 1)));
     }
 }
