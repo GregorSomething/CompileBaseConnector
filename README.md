@@ -26,9 +26,9 @@ public record Email(String name, String domain) {
     }
 }
 ```
-And you have Postgres database with table
-```postgresql
-TABLE users (
+And you have relational database with table
+```sql
+CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255),
   email VARCHAR(255)
