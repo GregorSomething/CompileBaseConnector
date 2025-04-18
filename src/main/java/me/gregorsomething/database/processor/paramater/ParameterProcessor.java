@@ -93,6 +93,7 @@ public class ParameterProcessor {
 
     private List<Pair<String, String>> getPublicVariables(VariableElement parameter) {
         Element element = this.processor.getTypeUtils().asElement(parameter.asType());
+        if (element == null) return List.of();
         List<Pair<String, String>> res = new ArrayList<>();
         if (element.getKind().isClass() || element.getKind().isInterface()) {
             List<ExecutableElement> methods = ElementFilter.methodsIn(element.getEnclosedElements());

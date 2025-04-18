@@ -16,6 +16,10 @@ public @interface Query {
 
     /**
      * Used as literal in return statement like 'return ENTERED_VALUE'
+     * When return type is list or optional this is not directly returns,
+     * as {@code List.of()} or {@code Optional.empty()} will be returned.
+     * This is ignored when return type is Optional or when type does
+     * not require null check after reading from ResultSet (primitives and boxed-primitives)
      * @return return default value
      */
     String defaultValue() default "null";

@@ -75,7 +75,7 @@ public class ComplexTypeMapperGenerator {
     private void readParameterVariable(CodeBlock.Builder code, int resultSetPos, String variableName, TypeMirror type) {
         if (this.typeMapperResolver.hasTypeDefFromResultSet(type)) {
             Pair<TypeMirror, String> mapper = this.typeMapperResolver.getTypeMapperFromResultSet(type);
-            code.addStatement("$T $L = T$.$L(rs, $L)", TypeName.get(type), variableName, mapper.left(), mapper.right(), resultSetPos);
+            code.addStatement("$T $L = $T.$L(rs, $L)", TypeName.get(type), variableName, TypeName.get(mapper.left()), mapper.right(), resultSetPos);
         } else {
             Pair<String, String> mapper = this.typeMapperResolver.getBuiltinMapperForType(type);
             if (mapper.right() != null) {
