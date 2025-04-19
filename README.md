@@ -114,3 +114,4 @@ something, it puts it as it is not code, and compiler can deal with it.
 - [ ] Implement paramater thingi in statements
 - [ ] Make this file more readable.
 - [ ] Document transactions
+- [ ] Document how to get Repository implementation
