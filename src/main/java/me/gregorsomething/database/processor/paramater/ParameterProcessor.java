@@ -1,7 +1,6 @@
 package me.gregorsomething.database.processor.paramater;
 
 import lombok.RequiredArgsConstructor;
-import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.processor.RepositoryProcessor;
 import me.gregorsomething.database.processor.helpers.Pair;
 
@@ -35,27 +34,26 @@ public class ParameterProcessor {
     /**
      * Processes sql query
      * @param element element for what query is about
-     * @param query sql qquery string
+     * @param sqlQuery sql query or statement
      * @return SQL query string after processing and parameters seperated by coma, including first
      */
-    public Pair<String, String> queryParametersFor(ExecutableElement element, Query query) {
-        String sqlQuery = query.value();
+    public Pair<String, String> queryParametersFor(ExecutableElement element, String sqlQuery) {
         List<String> replaceable = this.findReplaceable(sqlQuery);
 
         if (replaceable.isEmpty()) {
-            return this.queryParametersDirectlyFromElement(element, query);
+            return this.queryParametersDirectlyFromElement(element, sqlQuery);
         }
         if (sqlQuery.contains("?")) {
             this.processor.error("If query has [(...)] parameter it must not contain ? parameters", element);
         }
-        return this.queryParametersFromElementProcessing(element, query, replaceable);
+        return this.queryParametersFromElementProcessing(element, sqlQuery, replaceable);
     }
 
     /**
      * Processes [(...)] to usable formats
      */
-    private Pair<String, String> queryParametersFromElementProcessing(ExecutableElement element, Query query, List<String> toProcess) {
-        String newQuery = removePlaceholders(query.value());
+    private Pair<String, String> queryParametersFromElementProcessing(ExecutableElement element, String query, List<String> toProcess) {
+        String newQuery = removePlaceholders(query);
 
         if (element.getParameters().isEmpty()) {
             this.processor.error("If query has [(...)] parameter, method must have parameters", element);
@@ -129,12 +127,12 @@ public class ParameterProcessor {
         return res;
     }
 
-    private Pair<String, String> queryParametersDirectlyFromElement(ExecutableElement element, Query query) {
+    private Pair<String, String> queryParametersDirectlyFromElement(ExecutableElement element, String query) {
         StringBuilder args = new StringBuilder();
         for (VariableElement parameter : element.getParameters()) {
             args.append(", ").append(parameter.getSimpleName().toString());
         }
-        return Pair.of(query.value(), args.toString());
+        return Pair.of(query, args.toString());
     }
 
     private List<String> findReplaceable(String query) {

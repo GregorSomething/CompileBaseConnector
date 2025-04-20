@@ -1,8 +1,10 @@
 package me.gregorsomething.database.processor;
 
 import com.google.auto.service.AutoService;
-import com.squareup.javapoet.*;
-
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 import lombok.SneakyThrows;
 import me.gregorsomething.database.Database;
 import me.gregorsomething.database.Transaction;
@@ -10,6 +12,7 @@ import me.gregorsomething.database.Transactional;
 import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.annotations.Repository;
 import me.gregorsomething.database.annotations.Statement;
+import me.gregorsomething.database.processor.helpers.ElementUtils;
 import me.gregorsomething.database.processor.paramater.ParameterProcessor;
 import me.gregorsomething.database.processor.types.ComplexTypeResolver;
 import me.gregorsomething.database.processor.types.TypeMapperCodeGenerator;
@@ -24,6 +27,7 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -81,10 +85,11 @@ public class RepositoryProcessor extends AbstractProcessor {
     }
 
     private List<MethodSpec> createMethods(Element element, TypeMapperResolver extraTypes) {
-        StatementSubProcessor subProcessorStatement = new StatementSubProcessor(this);
+        ParameterProcessor parameterProcessor = new ParameterProcessor(this);
+        StatementSubProcessor subProcessorStatement = new StatementSubProcessor(this, parameterProcessor);
         QuerySubProcessor subProcessorQuery = new QuerySubProcessor(this,
                 new TypeMapperCodeGenerator(this, extraTypes,
-                        new ParameterProcessor(this),
+                        parameterProcessor,
                         new ComplexTypeResolver(this, extraTypes)
                 )
         );
@@ -187,5 +192,18 @@ public class RepositoryProcessor extends AbstractProcessor {
 
     public Elements getElementUtils() {
         return processingEnv.getElementUtils();
+    }
+
+    public MethodSpec.Builder validateAndOverrideMethod(ExecutableElement element) {
+        MethodSpec.Builder builder = ElementUtils.overrideMethod(element, Modifier.PUBLIC);
+
+        if (element.getThrownTypes().size() > 1)
+            throw new ProcessingValidationException("Only one exception can be thrown", element);
+        if (element.getThrownTypes().size() == 1 && !this.isOfType(element.getThrownTypes().getFirst(), SQLException.class))
+            throw new ProcessingValidationException("Only SQLException can be thrown", element);
+        if (element.getThrownTypes().size() == 1)
+            builder.addException(SQLException.class);
+
+        return builder;
     }
 }

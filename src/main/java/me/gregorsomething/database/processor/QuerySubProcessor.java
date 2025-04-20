@@ -8,11 +8,9 @@ import me.gregorsomething.database.processor.helpers.ElementUtils;
 import me.gregorsomething.database.processor.types.TypeMapperCodeGenerator;
 
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,18 +21,9 @@ public class QuerySubProcessor {
 
     public MethodSpec createQueryMethod(ExecutableElement element) {
         Query query = this.validateQueryAnnotationOn(element);
-        MethodSpec.Builder builder = ElementUtils.overrideMethod(element, Modifier.PUBLIC);
-
-        if (element.getThrownTypes().size() > 1)
-            throw new ProcessingValidationException("Only one exception can be thrown", element);
-        if (element.getThrownTypes().size() == 1 && !this.processor.isOfType(element.getThrownTypes().getFirst(), SQLException.class))
-            throw new ProcessingValidationException("Only SQLException can be thrown", element);
-        if (element.getThrownTypes().size() == 1)
-            builder.addException(SQLException.class);
-
-        builder.addCode(this.generateCodeFor(element, query));
-
-        return builder.build();
+        return this.processor.validateAndOverrideMethod(element)
+                .addCode(this.generateCodeFor(element, query))
+                .build();
     }
 
     private Query validateQueryAnnotationOn(ExecutableElement element) {

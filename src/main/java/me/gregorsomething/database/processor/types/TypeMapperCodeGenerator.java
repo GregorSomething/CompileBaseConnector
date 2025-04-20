@@ -25,7 +25,7 @@ public class TypeMapperCodeGenerator {
     private final ComplexTypeResolver complexTypeResolver;
 
     public CodeBlock forResultSet(ExecutableElement element, Query query) {
-        Pair<String, String> queryParams = this.parameterProcessor.queryParametersFor(element, query);
+        Pair<String, String> queryParams = this.parameterProcessor.queryParametersFor(element, query.value());
         return CodeBlock.builder()
                 .addStatement("return this.database.query($S$L)", queryParams.left(), queryParams.right())
                 .build();
@@ -173,7 +173,7 @@ public class TypeMapperCodeGenerator {
 
     private CodeBlock.Builder codeBlockStartForDatabaseQuery(ExecutableElement element, Query query, boolean isList, boolean isOptional) {
         CodeBlock.Builder code = CodeBlock.builder();
-        Pair<String, String> queryParams = this.parameterProcessor.queryParametersFor(element, query);
+        Pair<String, String> queryParams = this.parameterProcessor.queryParametersFor(element, query.value());
         code.beginControlFlow("try ($T rs = this.database.query($S$L))",
                 ResultSet.class, queryParams.left(), queryParams.right());
         this.insetNoRowsCheck(code, query, isList, isOptional);
