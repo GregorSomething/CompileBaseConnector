@@ -1,5 +1,6 @@
 package me.gregorsomething.example;
 
+import me.gregorsomething.database.Transactional;
 import me.gregorsomething.database.annotations.Query;
 import me.gregorsomething.database.annotations.Repository;
 import me.gregorsomething.database.annotations.Statement;
@@ -15,7 +16,7 @@ import java.util.Optional;
             email VARCHAR(255)
         );
         """, additionalTypes = {EmailTypeReader.class})
-public interface UserRepository {
+public interface UserRepository extends Transactional<UserRepository> {
 
     @Query(value = "SELECT id, name, email FROM users WHERE id = [( id )];",
             onNoResultThrow = true)
