@@ -1,22 +1,23 @@
 package me.gregorsomething.database;
 
-import lombok.SneakyThrows;
-
 import java.sql.SQLException;
 
+/**
+ * Adds transactional support to repository
+ * @param <T> repository type
+ */
 public interface Transactional<T> {
 
-    @SneakyThrows
     default boolean inTransaction(TransactionBlock<T> action) {
         try (Transaction transaction = this.getNewTransaction()) {
             try {
                 this.inTransaction(transaction, action);
                 transaction.commit();
-                return true; // Sucsess
+                return true; // success
             } catch (SQLException ignored) {
                 transaction.rollback();
             }
-        }
+        } catch (SQLException ignored) {}
         return false; // fail
     }
 
@@ -28,7 +29,7 @@ public interface Transactional<T> {
 
     Transaction getNewTransaction();
 
-    public interface TransactionBlock<T> {
+    interface TransactionBlock<T> {
         void runInTransaction(T transaction) throws SQLException;
     }
 }

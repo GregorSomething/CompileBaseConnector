@@ -39,8 +39,4 @@ public interface Database {
     }
 
     void close();
-
-    static DatabaseDetails.DatabaseDetailsBuilder detailsBuilder() {
-        return DatabaseDetails.builder();
-    }
 }

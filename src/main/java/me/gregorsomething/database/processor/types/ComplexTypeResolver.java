@@ -136,7 +136,6 @@ public class ComplexTypeResolver {
     private Optional<ExecutableElement> hasTypeMatchingStaticMethod(TypeElement returnType, Set<String> itemNames) {
         return ElementFilter.methodsIn(returnType.getEnclosedElements()).stream()
                 .filter(m -> m.getModifiers().containsAll(List.of(Modifier.PUBLIC, Modifier.STATIC)))
-                // TODO Next line will not work with static generics as their type is some generic
                 .filter(m -> this.processor.getTypeUtils().isAssignable(m.getReturnType(), returnType.asType()))
                 .filter(m -> {
                     Set<String> paramArgs = m.getParameters().stream()

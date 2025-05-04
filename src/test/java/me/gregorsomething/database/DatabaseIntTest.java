@@ -20,11 +20,8 @@ public class DatabaseIntTest {
     }
 
     public static Database makeTest() {
-        DatabaseDetails details = Database.detailsBuilder()
+        DatabaseDetails details = DatabaseDetails.builder()
                 .dbURL("127.0.0.1")
-                //.user("user1")
-                //.password("password")
-                //.maxPoolSize(3)
                 .user("postgres")
                 .password("postgres")
                 .dbName("test")

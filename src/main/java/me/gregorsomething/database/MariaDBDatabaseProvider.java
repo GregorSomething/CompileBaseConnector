@@ -3,7 +3,6 @@ package me.gregorsomething.database;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.mariadb.jdbc.MariaDbDataSource;
-import org.mariadb.jdbc.MariaDbPoolDataSource;
 
 import java.sql.SQLException;
 import java.util.function.Consumer;
