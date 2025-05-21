@@ -1,5 +1,7 @@
 plugins {
+    id 'java-library'
     id 'java'
+    id 'maven-publish'
 }
 
 group = 'me.gregors'
@@ -17,18 +19,18 @@ repositories {
 
 dependencies {
     // MariaDB Java client
-    implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.3'
+    api 'org.mariadb.jdbc:mariadb-java-client:3.5.3'
     // Postgres
-    implementation 'org.postgresql:postgresql:42.7.5'
+    api 'org.postgresql:postgresql:42.7.5'
 
     // Code generation
-    implementation 'com.squareup:javapoet:1.13.0'
+    api 'com.squareup:javapoet:1.13.0'
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
     compileOnly 'com.google.auto.service:auto-service:1.1.1'
     annotationProcessor 'com.google.auto.service:auto-service:1.1.1'
     compileOnly 'org.jetbrains:annotations:24.1.0'
-    implementation 'com.github.jsqlparser:jsqlparser:5.1'
+    api 'com.github.jsqlparser:jsqlparser:5.1'
 
     // Testing
     testImplementation platform('org.junit:junit-bom:5.11.0')
@@ -52,5 +54,13 @@ tasks.named('test', Test) {
 
     testLogging {
         events "passed"
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
     }
 }
